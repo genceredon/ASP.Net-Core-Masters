@@ -48,15 +48,7 @@ namespace ASPNetCoreMastersTodoList
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                  name: "default",
-                  pattern: "{controller}/{action}/{id}",
-                 defaults: new
-                 {
-                     controller = "items",
-                     action = "ItemsCreate",
-                     id = "sample"
-                 }); ;
+                endpoints.MapControllers();
             });
         }
     }
