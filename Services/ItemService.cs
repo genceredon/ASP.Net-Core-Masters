@@ -8,9 +8,15 @@ namespace Services
 {
     public class ItemService
     {
-        public int GetAll(int userId)
+        public int Get(int userId)
         {
+            Console.WriteLine($"Inside Get by id funtion {userId}");
             return userId;
+        }
+
+        public string GetAll()
+        {
+            return $"Inside GetAll() function";
         }
 
         public string Save(ItemDTO text)

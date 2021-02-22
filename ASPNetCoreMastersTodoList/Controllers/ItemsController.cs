@@ -10,7 +10,8 @@ using Services.DTO;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
-    
+    [Route("[controller]")]
+    [ApiController]
     public class ItemsController : ControllerBase
     {
         private readonly ILogger<ItemsController> _logger;
@@ -20,25 +21,56 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             _logger = logger;
         }
 
-        // 3. Change return type of Get action method to int.
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var service = new ItemService();
+            var result = service.GetAll();
+
+            return Ok(result);
+        }
+
         [HttpGet("{id:int}")]
-        public int Get(int id)
+        public IActionResult Get(int id)
         {
             //throw new Exception(); 
 
             var service = new ItemService();
-            var result = service.GetAll(id);
+            var result = service.Get(id);
 
-            return result;
+            return Ok(result);
         }
 
-        public void Post(ItemCreateApiModel itemCreateApiModel)
+        [HttpGet("filterBy/{filters=text}")]
+        public IActionResult GetByFilters([FromQuery] Dictionary<string, string> filters)
         {
+            string result = string.Empty;
+            foreach(var items in filters)
+            {
+                result = $"Key: {items.Key}, Value: {items.Value}";
+            }
 
+            return Ok($"Success: calling GetByFilters method. Params -- {result}");
         }
 
-        //5. Create an action method in the items controller that accepts ItemCreateApiModel 
-        //object and is mapped to an ItemDTO object for the ItemService Save method to consume
+        [HttpPost]
+        public IActionResult Post([FromBody] ItemCreateApiModel itemCreateModel)
+        {
+            return Ok($"Success: calling POST method - value: {itemCreateModel.Text}.");
+        }
+
+        [HttpPut("{id:int}")]
+        public IActionResult Put(int id,
+            [FromBody] ItemUpdateBindingModel itemUpdateModel)
+        {
+            return Ok($"Success: calling PUT method - value: {id}, {itemUpdateModel.Text}.");
+        }
+
+        [HttpDelete("{itemId:int}")]
+        public IActionResult Delete(int itemId)
+        {
+            return Ok($"Success: calling DELETE method - value: {itemId}.");
+        }
 
         public IActionResult ItemsCreate([FromBody]ItemCreateApiModel itemCreateApiModel)
         {
