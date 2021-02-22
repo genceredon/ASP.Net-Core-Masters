@@ -13,14 +13,12 @@ namespace Services
             return userId;
         }
 
-        //public async Task<object> Save(ItemDTO text)
-        //{
-        //    return await Task.FromResult<object>($"Inside ItemService Save method '{text}'.");
-        //}
-
         public string Save(ItemDTO text)
         {
-            return $"Inside ItemService Save method '{text.Text}'.";
+            var itemObj = new ItemDTO();
+            var result = itemObj.MappedObj(text);
+
+            return $"Inside ItemService Save method '{result.Items}'.";
         }
     }
 }

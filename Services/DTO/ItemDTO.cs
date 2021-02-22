@@ -12,13 +12,16 @@ namespace Services.DTO
         public string Text { get; set; }
 
         //7. Add DomainModels reference to Services project, then map the DTO property to DomainModel Item property
-
-        public void MappedObj()
+        public Item MappedObj(ItemDTO item)
         {
-            var dtoProp = new Item()
+            Text = item.Text;
+
+            var dtoItemObj = new Item()
             {
                 Items = Text
             };
+
+            return dtoItemObj;
         }
     }
 }
