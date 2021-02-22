@@ -40,7 +40,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         //5. Create an action method in the items controller that accepts ItemCreateApiModel 
         //object and is mapped to an ItemDTO object for the ItemService Save method to consume
 
-        public IActionResult ItemsCreate(ItemCreateApiModel itemCreateApiModel)
+        public IActionResult ItemsCreate([FromBody]ItemCreateApiModel itemCreateApiModel)
         {
             var mappedObj = new ItemDTO
             {
