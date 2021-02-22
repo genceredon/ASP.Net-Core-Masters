@@ -50,12 +50,11 @@ namespace ASPNetCoreMastersTodoList
             {
                 endpoints.MapControllerRoute(
                   name: "default",
-                  pattern: "{controller}/{action}/{id}",
+                  pattern: "{controller}/{action}/{id?}",
                  defaults: new
                  {
                      controller = "items",
-                     action = "ItemsCreate",
-                     id = "sample"
+                     action = "ItemsCreate"
                  }); ;
             });
         }
