@@ -1,13 +1,24 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Services.DTO;
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Services
 {
     public class ItemService
     {
-        public IEnumerable<string> GetAll(int userId)
+        public int GetAll(int userId)
         {
-            return new string[] { $"Inside ItemService: value1 '{userId}'", "value2" };
+            return userId;
+        }
+
+        public string Save(ItemDTO text)
+        {
+            var itemObj = new ItemDTO();
+            var result = itemObj.MappedObj(text);
+
+            return $"Inside ItemService Save method '{result.Items}'.";
         }
     }
 }
