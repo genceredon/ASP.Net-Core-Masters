@@ -21,7 +21,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
 
         // GET: <ItemController>
         [HttpGet("{id:int}")]
-        public IEnumerable<string> Get(int id)
+        public int Get(int id)
         {
             //throw new Exception(); 
 
