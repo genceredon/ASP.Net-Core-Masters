@@ -7,6 +7,7 @@ namespace Services.DTO
     {
         // It is not clear on the instruction what should the class ItemDTO has 
         // I just assumed that class ItemDTO has this property
+        [Required]
         [StringLength(128, MinimumLength = 1)]
         public string Text { get; set; }
 
