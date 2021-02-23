@@ -15,6 +15,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
     public class ItemsController : ControllerBase
     {
         private readonly ILogger<ItemsController> _logger;
+        private readonly ItemService _service = new ItemService();
 
         public ItemsController(ILogger<ItemsController> logger)
         {
@@ -24,8 +25,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var service = new ItemService();
-            var result = service.GetAll();
+            var result = _service.GetAll();
 
             return Ok(result);
         }
@@ -34,9 +34,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         public IActionResult Get(int id)
         {
             //throw new Exception(); 
-
-            var service = new ItemService();
-            var result = service.Get(id);
+            var result = _service.Get(id);
 
             return Ok(result);
         }
@@ -44,11 +42,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         [HttpGet("filterBy/{filters=text}")]
         public IActionResult GetByFilters([FromQuery] Dictionary<string, string> filters)
         {
-            string result = string.Empty;
-            foreach(var items in filters)
-            {
-                result = $"Key: {items.Key}, Value: {items.Value}";
-            }
+            var result = _service.GetByFilters(filters);
 
             return Ok($"Success: calling GetByFilters method. Params -- {result}");
         }
@@ -56,20 +50,35 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] ItemCreateApiModel itemCreateModel)
         {
-            return Ok($"Success: calling POST method - value: {itemCreateModel.Text}.");
+            var mappedObj = new ItemDTO
+            {
+                Text = itemCreateModel.Text
+            };
+
+            var result = _service.Post(mappedObj);
+
+            return Ok($"Success: calling POST method - value: {result}.");
         }
 
         [HttpPut("{id:int}")]
         public IActionResult Put(int id,
             [FromBody] ItemUpdateBindingModel itemUpdateModel)
         {
-            return Ok($"Success: calling PUT method - value: {id}, {itemUpdateModel.Text}.");
+            var mappedObj = new ItemDTO
+            {
+                Text = itemUpdateModel.Text
+            };
+
+            var result = _service.Put(id, mappedObj);
+
+            return Ok($"Success: calling PUT method - value: {result}.");
         }
 
         [HttpDelete("{itemId:int}")]
         public IActionResult Delete(int itemId)
         {
-            return Ok($"Success: calling DELETE method - value: {itemId}.");
+            var result = _service.Delete(itemId);
+            return Ok($"Success: calling DELETE method - value: {result}.");
         }
 
         public IActionResult ItemsCreate([FromBody]ItemCreateApiModel itemCreateApiModel)
@@ -79,8 +88,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                 Text = itemCreateApiModel.Text
             };
 
-            var service = new ItemService();
-            var result = service.Save(mappedObj);
+            var result = _service.Save(mappedObj);
            
             return Ok(result);
         }
