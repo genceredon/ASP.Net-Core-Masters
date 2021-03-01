@@ -3,7 +3,7 @@ using DomainModels;
 
 namespace Services.DTO
 {
-    public class ItemDTO
+    public class ItemByFilterDTO
     {
         [Required]
         public int Id { get; set; }
@@ -14,11 +14,12 @@ namespace Services.DTO
 
         public Item MappedObj(ItemDTO item)
         {
-          
+            Text = item.Text;
+
             var dtoItemObj = new Item()
             {
-                Id = item.Id,
-                Text = item.Text
+                Id = Id,
+                Text = Text
             };
 
             return dtoItemObj;

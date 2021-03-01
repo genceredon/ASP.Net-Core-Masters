@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ASPNetCoreMastersTodoList.Api.ApiModels
+namespace ASPNetCoreMastersTodoList.Api.BindingModels
 {
-    public class ItemUpdateBindingModel
-
+    public class ItemCreateBindingModel
     {
         [Required]
         [StringLength(128, MinimumLength = 1)]
