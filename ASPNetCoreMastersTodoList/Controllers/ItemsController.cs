@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 using Services;
 using Microsoft.Extensions.Logging;
-using System;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
 using Services.DTO;
+using ASPNetCoreMastersTodoList.Api.BindingModels;
+using System.Collections.Generic;
+using System.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -15,11 +17,19 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
     public class ItemsController : ControllerBase
     {
         private readonly ILogger<ItemsController> _logger;
-        private readonly ItemService _service = new ItemService();
+        private readonly IItemService _service;
 
-        public ItemsController(ILogger<ItemsController> logger)
+        public ItemsController(ILogger<ItemsController> logger, IItemService service)
         {
             _logger = logger;
+            _service = service;
+        }
+
+        [Route("{*url}", Order = 999)]
+        public IActionResult CatchAll()
+        {
+            Response.StatusCode = 404;
+            return NotFound();
         }
 
         [HttpGet]
@@ -27,24 +37,25 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         {
             var result = _service.GetAll();
 
-            return Ok(result);
+            return result != null ? Ok(result) : (IActionResult)NotFound();
         }
 
         [HttpGet("{id:int}")]
         public IActionResult Get(int id)
         {
-            //throw new Exception(); 
             var result = _service.Get(id);
 
-            return Ok(result);
+            return result.Text != null && result.Id > 0 ? Ok(result) : (IActionResult)NotFound();
         }
 
         [HttpGet("filterBy/{filters=text}")]
-        public IActionResult GetByFilters([FromQuery] Dictionary<string, string> filters)
+        public IActionResult GetAllByFilters([FromQuery] ItemByFilterDTO filters)
         {
-            var result = _service.GetByFilters(filters);
+            var result = _service.GetAllByFilter(filters);
+            
+            var isNullOrEmpty = result.Cast<object>().Any();
 
-            return Ok($"Success: calling GetByFilters method. Params -- {result}");
+            return isNullOrEmpty ? Ok(result) : (IActionResult)NotFound();
         }
 
         [HttpPost]
@@ -55,9 +66,9 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                 Text = itemCreateModel.Text
             };
 
-            var result = _service.Post(mappedObj);
-
-            return Ok($"Success: calling POST method - value: {result}.");
+            _service.Add(mappedObj);
+            
+            return Ok("Successfully Added!");
         }
 
         [HttpPut("{id:int}")]
@@ -66,31 +77,28 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         {
             var mappedObj = new ItemDTO
             {
+                Id = id,
                 Text = itemUpdateModel.Text
             };
+            
+            _service.Add(mappedObj);
 
-            var result = _service.Put(id, mappedObj);
-
-            return Ok($"Success: calling PUT method - value: {result}.");
+            return Ok("Successfully Updated!");
         }
 
         [HttpDelete("{itemId:int}")]
         public IActionResult Delete(int itemId)
         {
-            var result = _service.Delete(itemId);
-            return Ok($"Success: calling DELETE method - value: {result}.");
-        }
-
-        public IActionResult ItemsCreate([FromBody]ItemCreateApiModel itemCreateApiModel)
-        {
-            var mappedObj = new ItemDTO
+            if (itemId != 0 )
             {
-                Text = itemCreateApiModel.Text
-            };
+                _service.Delete(itemId);
+            }
+            else
+            {
+                return NotFound();
+            }
 
-            var result = _service.Save(mappedObj);
-           
-            return Ok(result);
+            return Ok("Successfully Deleted!");
         }
     }
 }
