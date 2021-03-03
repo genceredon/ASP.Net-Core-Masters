@@ -22,5 +22,20 @@ namespace ASPNetCoreMastersTodoList
                 {
                     webBuilder.UseStartup<Startup>();
                 });
+
+        private static void AddAppConfiguration(WebHostBuilderContext hostingContext, IConfigurationBuilder config)
+        {
+            var env = hostingContext.HostingEnvironment;
+            config.SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: true,
+                    reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json",
+                    optional: true);
+
+            if (env.IsDevelopment())
+            {
+                config.AddUserSecrets<Program>();
+            }
+        }
     }
 }
