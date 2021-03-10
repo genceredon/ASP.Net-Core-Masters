@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Repositories
 {
@@ -15,9 +16,9 @@ namespace Repositories
             _dataContext = dataContext;
         }
 
-        public IQueryable<Item> All()
+        public async Task<IQueryable<Item>> GetAllAsync()
         {
-            return _dataContext.itemList.AsQueryable();
+            return await Task.FromResult(_dataContext.itemList.AsQueryable());
         }
 
         public void Save(Item item) 

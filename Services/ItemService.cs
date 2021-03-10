@@ -3,6 +3,7 @@ using Services.DTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Services
 {
@@ -15,13 +16,15 @@ namespace Services
             _itemRepo = itemRepo;
         }
 
-        public ItemDTO Get(int itemId)
+        public async Task<ItemDTO> GetAsync(int itemId)
         {
             try
             {
                 var result = new ItemDTO();
-                var item = _itemRepo.All().FirstOrDefault(x => x.Id == itemId);
+                var repoObj = await _itemRepo.GetAllAsync();
 
+                var item = repoObj.FirstOrDefault(x => x.Id == itemId);
+                
                 if (item != null)
                 {
                     result.Id = item.Id;
@@ -36,9 +39,9 @@ namespace Services
             }       
         }
 
-        public IEnumerable<ItemDTO> GetAll()
+        public async Task<IEnumerable<ItemDTO>> GetAllAsync()
         {
-            var itemList = _itemRepo.All();
+            var itemList = await _itemRepo.GetAllAsync();
             var listAll = itemList.Select(x => new ItemDTO()
             {
                 Id = x.Id,
@@ -48,9 +51,9 @@ namespace Services
             return listAll;
         }
 
-        public IEnumerable<ItemDTO> GetAllByFilter(ItemByFilterDTO filters)
+        public async Task<IEnumerable<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters)
         {
-            var itemList = _itemRepo.All();
+            var itemList = await _itemRepo.GetAllAsync();
 
             var filteredList = itemList.Where(x => x.Text.ToLower() == filters.Text.ToLower()).Select(f => new ItemDTO()
             {
@@ -102,7 +105,7 @@ namespace Services
         private bool IsIdExisting(int id)
         {
             bool isExisting;
-            var itemExisting = Get(id);
+            var itemExisting = GetAsync(id);
 
             if (itemExisting.Id != 0)
             {
