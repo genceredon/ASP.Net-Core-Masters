@@ -7,14 +7,13 @@ using ASPNetCoreMastersTodoList.Api.BindingModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Filters;
+using System;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    [GlobalTimeElapsedAsyncFilter]
-    public class ItemsController : ControllerBase, IAsyncActionFilter
+    public class ItemsController : ControllerBase
     {
         private readonly ILogger<ItemsController> _logger;
         private readonly IItemService _service;
@@ -22,7 +21,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         public ItemsController(ILogger<ItemsController> logger, IItemService service)
         {
             _logger = logger;
-            _service = service;
+            _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
         [Route("{*url}", Order = 999)]
@@ -46,6 +45,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [CheckItemExists]
         public async Task<IActionResult> GetAsync(int id)
         {
             var result = await _service.GetAsync(id);
@@ -83,6 +83,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
 
         
         [HttpPut("{id:int}")]
+        [CheckItemExists]
         public IActionResult Put(int id,
             [FromBody] ItemUpdateBindingModel itemUpdateModel)
         {
@@ -98,29 +99,12 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [CheckItemExists]
         public IActionResult Delete(int id)
         {
             _service.Delete(id);
 
             return Ok("Successfully Deleted!");
-        }
-
-        [NonAction]
-        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
-        {
-            if (context.ActionArguments.ContainsKey("id"))
-            {
-                var id = (int)context.ActionArguments["id"];
-                var result = await _service.GetAsync(id);
-
-                if (result.Id == 0)
-                {
-                    context.Result = new NotFoundResult();
-                    return;
-                }
-            }
-
-            await next();
-        }
+        }        
     }
 }
