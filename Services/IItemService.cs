@@ -2,16 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Services
 {
     public interface IItemService
     {
-        public IEnumerable<ItemDTO> GetAll();
+        public Task<IEnumerable<ItemDTO>> GetAllAsync();
 
-        public IEnumerable<ItemDTO> GetAllByFilter(ItemByFilterDTO filters);
+        public Task<IEnumerable<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters);
 
-        public ItemDTO Get(int itemId);
+        public Task<ItemDTO> GetAsync(int itemId);
 
         public void Add(ItemDTO itemDto);
 

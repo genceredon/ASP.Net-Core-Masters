@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Repositories;
 using Services;
 using ASPNetCoreMastersTodoList.Api.Models;
+using ASPNetCoreMastersTodoList.Api.Filters;
 
 
 namespace ASPNetCoreMastersTodoList
@@ -25,7 +26,11 @@ namespace ASPNetCoreMastersTodoList
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers(options => 
+            {
+                options.Filters.Add(new GlobalTimeElapsedAsyncFilter());          
+            });
+
             services.AddSingleton<DataContext>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<IItemService, ItemService>();

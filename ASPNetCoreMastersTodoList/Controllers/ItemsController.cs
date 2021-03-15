@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using Services;
 using Microsoft.Extensions.Logging;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
 using Services.DTO;
 using ASPNetCoreMastersTodoList.Api.BindingModels;
-using System.Collections.Generic;
+using ASPNetCoreMastersTodoList.Api.Filters;
 using System.Linq;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using System.Threading.Tasks;
+using System;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
@@ -22,7 +21,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         public ItemsController(ILogger<ItemsController> logger, IItemService service)
         {
             _logger = logger;
-            _service = service;
+            _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
         [Route("{*url}", Order = 999)]
@@ -33,29 +32,40 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAllAsync()
         {
-            var result = _service.GetAll();
+            var result = await _service.GetAllAsync();
 
-            return result != null ? Ok(result) : (IActionResult)NotFound();
+            if(result == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
 
         [HttpGet("{id:int}")]
-        public IActionResult Get(int id)
+        [CheckItemExists]
+        public async Task<IActionResult> GetAsync(int id)
         {
-            var result = _service.Get(id);
+            var result = await _service.GetAsync(id);
 
-            return result.Text != null && result.Id > 0 ? Ok(result) : (IActionResult)NotFound();
+            return Ok(result);
         }
 
         [HttpGet("filterBy/{filters=text}")]
-        public IActionResult GetAllByFilters([FromQuery] ItemByFilterDTO filters)
+        public async Task<IActionResult> GetAllByFilterAsync([FromQuery] ItemByFilterDTO filters)
         {
-            var result = _service.GetAllByFilter(filters);
+            var result = await _service.GetAllByFilterAsync(filters);
             
             var isNullOrEmpty = result.Cast<object>().Any();
 
-            return isNullOrEmpty ? Ok(result) : (IActionResult)NotFound();
+            if (!isNullOrEmpty)
+            {
+                return NotFound();
+            }
+
+            return Ok(result);
         }
 
         [HttpPost]
@@ -71,7 +81,9 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             return Ok("Successfully Added!");
         }
 
+        
         [HttpPut("{id:int}")]
+        [CheckItemExists]
         public IActionResult Put(int id,
             [FromBody] ItemUpdateBindingModel itemUpdateModel)
         {
@@ -86,19 +98,13 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             return Ok("Successfully Updated!");
         }
 
-        [HttpDelete("{itemId:int}")]
-        public IActionResult Delete(int itemId)
+        [HttpDelete("{id:int}")]
+        [CheckItemExists]
+        public IActionResult Delete(int id)
         {
-            if (itemId != 0 )
-            {
-                _service.Delete(itemId);
-            }
-            else
-            {
-                return NotFound();
-            }
+            _service.Delete(id);
 
             return Ok("Successfully Deleted!");
-        }
+        }        
     }
 }
