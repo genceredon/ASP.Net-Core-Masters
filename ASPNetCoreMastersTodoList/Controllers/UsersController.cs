@@ -5,15 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ASPNetCoreMastersTodoList.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using ASPNetCoreMastersTodoList.Api.Areas.Identity.Data;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using ASPNetCoreMastersTodoList.Api.BindingModels;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
-using System.Text.Encodings.Web;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -28,16 +32,19 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         private readonly SignInManager<ASPNetCoreMastersTodoListApiUser> _signInManager;
         private readonly UserManager<ASPNetCoreMastersTodoListApiUser> _userManager;
         private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _configuration;
 
         public UsersController(ILogger<UsersController> logger, IOptions<Settings> options,
             UserManager<ASPNetCoreMastersTodoListApiUser> userManager,
-            SignInManager<ASPNetCoreMastersTodoListApiUser> signInManager, IEmailSender emailSender)
+            SignInManager<ASPNetCoreMastersTodoListApiUser> signInManager, IEmailSender emailSender,
+            IConfiguration configuration)
         {
             _logger = logger;
             _settings = options.Value;
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -47,38 +54,57 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<IActionResult> OnPostRegisterAsync([FromBody]RegisterInputBindingModel register, string returnUrl = null)
+        public async Task<IActionResult> OnPostRegisterAsync([FromBody] RegisterInputBindingModel register)
         {
-            returnUrl ??= Url.Content("~/");
             register.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-            
+
             if (ModelState.IsValid)
             {
-                var user = new ASPNetCoreMastersTodoListApiUser { UserName = register.Input.Email, Email = register.Input.Email };
+                var userNameExists = await _userManager.FindByNameAsync(register.Input.Username);
+                var userEmailExists = await _userManager.FindByEmailAsync(register.Input.Email);
+
+                if (userEmailExists != null)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = "Email Address already exists!" });
+
+                }
+                else if (userNameExists != null)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = "Username already exists!" });
+                }
+
+                var user = new ASPNetCoreMastersTodoListApiUser
+                {
+                    UserName = register.Input.Username,
+                    Email = register.Input.Email,
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                };
+
                 var result = await _userManager.CreateAsync(user, register.Input.Password);
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    
+
                     var callbackUrl = $"https://localhost:44387/users/ConfirmEmail?userId={user.Id}&code={code}";
 
                     var response = new ResponseModel
                     {
-                        StatusMessage = $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>."
+                        Message = $"Please confirm your account by <a href='{callbackUrl}'>clicking here</a>."
                     };
 
-                    await _emailSender.SendEmailAsync(register.Input.Email, "Confirm your email", response.StatusMessage);
+                    await _emailSender.SendEmailAsync(register.Input.Email, "Confirm your email", response.Message);
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
-                        return Ok(response.StatusMessage);
+                        return Ok(new ResponseModel { Status = "Success", Message = response.Message });
                     }
                     else
                     {
                         await _signInManager.SignInAsync(user, isPersistent: false);
-                        return Ok("Success!");
+                        return Ok(new ResponseModel { Status = "Success", Message = "User created successfully!" });
                     }
                 }
                 foreach (var error in result.Errors)
@@ -87,15 +113,12 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                 }
             }
 
-            // If we got this far, something failed, redisplay form
-            return BadRequest(ModelState);
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = "User registration failed! Please check user details and try again." });
         }
 
-        [HttpGet("ConfirmEmail")]
+        [HttpGet("confirmemail")]
         public async Task<IActionResult> OnGetConfirmEmailAsync(string userId, string code)
         {
-            var response = new ResponseModel();
-
             if (userId == null || code == null)
             {
                 return RedirectToPage("/");
@@ -109,51 +132,80 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
 
             code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
             var result = await _userManager.ConfirmEmailAsync(user, code);
-            response.StatusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
-            return Ok(response.StatusMessage);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = "Error confirming your email." });
+            }
+
+            return Ok(new ResponseModel { Status = "Success", Message = "Thank you for confirming your email." });
         }
 
-        [HttpPost("Login")]
-        public async Task<IActionResult> OnPostLoginAsync([FromBody] LoginInputBindingModel model, string returnUrl = null)
+        [HttpPost("login")]
+        public async Task<IActionResult> OnPostLoginAsync([FromBody] LoginInputBindingModel model)
         {
             var response = new ResponseModel();
-
-            returnUrl ??= Url.Content("~/");
 
             model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(model.Input.Email, model.Input.Password, model.Input.RememberMe, lockoutOnFailure: false);
+                var result = await _signInManager.PasswordSignInAsync(model.Input.Username, model.Input.Password, model.Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
-                    response.StatusMessage = "User logged in.";
+                    var user = await _userManager.FindByNameAsync(model.Input.Username);
 
-                    _logger.LogInformation("User logged in.");
-                    return Ok(response.StatusMessage);
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = model.Input.RememberMe });
+                    if (user != null && await _userManager.CheckPasswordAsync(user, model.Input.Password))
+                    {
+
+                        var authClaims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.Name, user.UserName),
+                            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                        };
+
+                        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Authentication:JWT:SecurityKey"]));
+
+                        var token = new JwtSecurityToken(
+                            issuer: _configuration["Authentication:JWT:Issuer"],
+                            audience: _configuration["Authentication:JWT:Audience"],
+                            expires: DateTime.Now.AddHours(3),
+                            claims: authClaims,
+                            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                        );
+
+                        response.Status = "Success";
+                        response.Message = "User logged in.";
+
+                        _logger.LogInformation("User logged in.");
+
+                        return Ok(new
+                        {
+                            token = new JwtSecurityTokenHandler().WriteToken(token),
+                            expiration = token.ValidTo
+                        });
+                    }
                 }
                 if (result.IsLockedOut)
                 {
-                    response.ErrorMessage = "User account locked out.";
-                    _logger.LogWarning(response.ErrorMessage);
-                    return BadRequest(response.ErrorMessage);
+                    response.Message = "User account locked out.";
+
+                    _logger.LogWarning(response.Message);
+
+                    return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = response.Message });
                 }
                 else
                 {
-                    response.ErrorMessage = "Invalid login attempt.";
-                    ModelState.AddModelError(string.Empty, response.ErrorMessage);
-                    return BadRequest(response.ErrorMessage);
+                    response.Message = "Invalid login attempt.";
+
+                    ModelState.AddModelError(string.Empty, response.Message);
+                    _logger.LogWarning(response.Message);
+
+                    return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = response.Message });
                 }
             }
 
-            // If we got this far, something failed, redisplay form
-            return BadRequest(ModelState);
+            return Unauthorized();
         }
     }
 }

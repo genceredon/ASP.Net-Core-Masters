@@ -1,5 +1,5 @@
 ﻿
-namespace ASPNetCoreMastersTodoList.Api.Models
+namespace ASPNetCoreMastersTodoList.Api.ApiModels
 {
     public class Settings
     {

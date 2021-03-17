@@ -6,11 +6,15 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
 using Repositories;
 using Services;
-using ASPNetCoreMastersTodoList.Api.Models;
+using ASPNetCoreMastersTodoList.Api.ApiModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
 using ASPNetCoreMastersTodoList.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using ASPNetCoreMastersTodoList.Api.Areas.Identity.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace ASPNetCoreMastersTodoList
 {
@@ -34,16 +38,43 @@ namespace ASPNetCoreMastersTodoList
 
             services.AddSingleton<DataContext>();
             services.AddScoped<IItemRepository, ItemRepository>();
-            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IItemService, ItemService>();
 
             services.Configure<Settings>(Configuration.GetSection("Authentication:JWT:SecurityKey"));
-
+           
+            // For Entity Framework
             services.AddDbContext<ASPNetCoreMastersTodoListApiContext>(options =>
                     options.UseSqlServer(
                         Configuration.GetConnectionString("ASPNetCoreMastersTodoListApiContextConnection")));
 
+            // For Identity
             services.AddDefaultIdentity<ASPNetCoreMastersTodoListApiUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>();
+                .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>()
+                .AddDefaultTokenProviders();
+ 
+            // Adding Authentication  
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                // Adding Jwt Bearer  
+                .AddJwtBearer(options =>
+                {
+                    options.SaveToken = true;
+                    options.RequireHttpsMetadata = false;
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidAudience = Configuration.GetSection("Authentication:JWT:Audience").Value,
+                        ValidIssuer = Configuration.GetSection("Authentication:JWT:Issuer").Value,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Authentication:JWT:SecurityKey").Value))
+                    };
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

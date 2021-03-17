@@ -13,9 +13,9 @@ namespace ASPNetCoreMastersTodoList.Api.Filters
 
         private class CheckItemExistsFilter : IAsyncActionFilter
         {
-            private readonly IUserService _service;
+            private readonly IItemService _service;
 
-            public CheckItemExistsFilter(IUserService service)
+            public CheckItemExistsFilter(IItemService service)
             {
                 _service = service ?? throw new ArgumentNullException(nameof(service));
             }

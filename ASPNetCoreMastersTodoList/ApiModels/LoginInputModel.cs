@@ -8,11 +8,10 @@ namespace ASPNetCoreMastersTodoList.Api.ApiModels
 {
     public class LoginInputModel
     {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; }
+        [Required(ErrorMessage = "User Name is required")]
+        public string Username { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
         public string Password { get; set; }
 

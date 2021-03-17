@@ -8,6 +8,10 @@ namespace ASPNetCoreMastersTodoList.Api.ApiModels
 {
     public class RegisterInputModel
     {
+        [Required(ErrorMessage = "User Name is required")]
+        [Display(Name = "Username")]
+        public string Username { get; set; }
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
