@@ -8,13 +8,14 @@ using Repositories;
 using Services;
 using ASPNetCoreMastersTodoList.Api.Models;
 using ASPNetCoreMastersTodoList.Api.Filters;
-
+using ASPNetCoreMastersTodoList.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using ASPNetCoreMastersTodoList.Api.Areas.Identity.Data;
 
 namespace ASPNetCoreMastersTodoList
 {
     public class Startup
     {
-        private string _userSecretApiKey;
 
         public Startup(IConfiguration configuration)
         {
@@ -33,11 +34,16 @@ namespace ASPNetCoreMastersTodoList
 
             services.AddSingleton<DataContext>();
             services.AddScoped<IItemRepository, ItemRepository>();
-            services.AddScoped<IItemService, ItemService>();
+            services.AddScoped<IUserService, UserService>();
 
-            _userSecretApiKey = Configuration["Authentication:JWT:SecurityKey"];
+            services.Configure<Settings>(Configuration.GetSection("Authentication:JWT:SecurityKey"));
 
-            services.Configure<Settings>(Configuration.GetSection("Authentication"));
+            services.AddDbContext<ASPNetCoreMastersTodoListApiContext>(options =>
+                    options.UseSqlServer(
+                        Configuration.GetConnectionString("ASPNetCoreMastersTodoListApiContextConnection")));
+
+            services.AddDefaultIdentity<ASPNetCoreMastersTodoListApiUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,14 +63,12 @@ namespace ASPNetCoreMastersTodoList
 
             app.UseRouting();
 
+            app.UseAuthentication();
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hello World! This is your secret key : " + _userSecretApiKey);
-                });
                 endpoints.MapControllers();                  
             });
         }

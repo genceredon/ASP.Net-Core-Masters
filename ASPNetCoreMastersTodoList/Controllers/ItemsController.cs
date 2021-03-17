@@ -8,9 +8,11 @@ using ASPNetCoreMastersTodoList.Api.Filters;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     [ApiController]
     public class ItemsController : ControllerBase
