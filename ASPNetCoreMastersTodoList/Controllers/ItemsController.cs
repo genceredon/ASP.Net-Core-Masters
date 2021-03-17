@@ -100,6 +100,10 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             return Ok("Successfully Updated!");
         }
 
+        //Just Added extra authorization here, only with Admin Role can access the Delete API (sample only)
+        //Can also add to other API
+
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id:int}")]
         [CheckItemExists]
         public IActionResult Delete(int id)

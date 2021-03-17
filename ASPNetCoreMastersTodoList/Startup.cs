@@ -3,14 +3,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Http;
 using Repositories;
 using Services;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
 using ASPNetCoreMastersTodoList.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using ASPNetCoreMastersTodoList.Api.Areas.Identity.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -49,9 +47,10 @@ namespace ASPNetCoreMastersTodoList
 
             // For Identity
             services.AddDefaultIdentity<ASPNetCoreMastersTodoListApiUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>()
-                .AddDefaultTokenProviders();
- 
+                .AddDefaultTokenProviders();                
+
             // Adding Authentication  
             services.AddAuthentication(options =>
             {
