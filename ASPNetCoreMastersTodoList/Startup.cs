@@ -3,18 +3,21 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Http;
 using Repositories;
 using Services;
-using ASPNetCoreMastersTodoList.Api.Models;
+using ASPNetCoreMastersTodoList.Api.ApiModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
-
+using ASPNetCoreMastersTodoList.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace ASPNetCoreMastersTodoList
 {
     public class Startup
     {
-        private string _userSecretApiKey;
 
         public Startup(IConfiguration configuration)
         {
@@ -35,9 +38,42 @@ namespace ASPNetCoreMastersTodoList
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<IItemService, ItemService>();
 
-            _userSecretApiKey = Configuration["Authentication:JWT:SecurityKey"];
+            services.Configure<Settings>(Configuration.GetSection("Authentication:JWT:SecurityKey"));
+           
+            // For Entity Framework
+            services.AddDbContext<ASPNetCoreMastersTodoListApiContext>(options =>
+                    options.UseSqlServer(
+                        Configuration.GetConnectionString("ASPNetCoreMastersTodoListApiContextConnection")));
 
-            services.Configure<Settings>(Configuration.GetSection("Authentication"));
+            // For Identity
+            services.AddDefaultIdentity<ASPNetCoreMastersTodoListApiUser>(options => options.SignIn.RequireConfirmedAccount = true)
+                .AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>()
+                .AddDefaultTokenProviders();                
+
+            // Adding Authentication  
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                // Adding Jwt Bearer  
+                .AddJwtBearer(options =>
+                {
+                    options.SaveToken = true;
+                    options.RequireHttpsMetadata = false;
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidAudience = Configuration.GetSection("Authentication:JWT:Audience").Value,
+                        ValidIssuer = Configuration.GetSection("Authentication:JWT:Issuer").Value,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Authentication:JWT:SecurityKey").Value))
+                    };
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,14 +93,12 @@ namespace ASPNetCoreMastersTodoList
 
             app.UseRouting();
 
+            app.UseAuthentication();
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hello World! This is your secret key : " + _userSecretApiKey);
-                });
                 endpoints.MapControllers();                  
             });
         }

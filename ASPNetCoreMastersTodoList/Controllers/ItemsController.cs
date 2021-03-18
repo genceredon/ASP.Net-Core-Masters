@@ -8,9 +8,11 @@ using ASPNetCoreMastersTodoList.Api.Filters;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
+    [Authorize]
     [Route("[controller]")]
     [ApiController]
     public class ItemsController : ControllerBase
@@ -98,6 +100,10 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             return Ok("Successfully Updated!");
         }
 
+        //Just Added extra authorization here, only with Admin Role can access the Delete API (sample only)
+        //Can also add to other API
+
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id:int}")]
         [CheckItemExists]
         public IActionResult Delete(int id)
