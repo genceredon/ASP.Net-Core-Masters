@@ -91,7 +91,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                    var callbackUrl = $"https://localhost:44387/users/ConfirmEmail?userId={user.Id}&code={code}";
+                    string callbackUrl = Url.Link("ConfirmEmail", new { userId = user.Id, code = code });
 
                     var response = new ResponseModel
                     {
@@ -169,7 +169,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                    var callbackUrl = $"https://localhost:44387/users/ConfirmEmail?userId={user.Id}&code={code}";
+                    string callbackUrl = Url.Link("ConfirmEmail", new { userId = user.Id, code = code });
 
                     var response = new ResponseModel
                     {
@@ -197,12 +197,12 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = "User registration failed! Please check user details and try again." });
         }
 
-        [HttpGet("confirmemail")]
+        [HttpGet("{userId}/email/confirm", Name = "ConfirmEmail")]
         public async Task<IActionResult> OnGetConfirmEmailAsync(string userId, string code)
         {
             if (userId == null || code == null)
             {
-                return RedirectToPage("/");
+                return BadRequest();
             }
 
             var user = await _userManager.FindByIdAsync(userId);
@@ -236,41 +236,61 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                 {
                     var user = await _userManager.FindByNameAsync(model.Input.Username);
 
-                    if (user != null && await _userManager.CheckPasswordAsync(user, model.Input.Password))
+                    if(user == null)
                     {
-                        var userRoles = await _userManager.GetRolesAsync(user);
-
-                        var authClaims = new List<Claim>
+                        response.Message = $"User with username '{model.Input.Username}' is not found";
+                        return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = response.Message });
+                    }
+                    else if (await _userManager.CheckPasswordAsync(user, model.Input.Password))
+                    {
+                        if (!user.EmailConfirmed)
                         {
-                            new Claim(ClaimTypes.Name, user.UserName),
-                            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                        };
-
-                        foreach (var userRole in userRoles)
-                        {
-                            authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                            response.Message = "Email is not confirmed. Please, go to your email account.";
+                            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = response.Message });
                         }
-
-                        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Authentication:JWT:SecurityKey"]));
-
-                        var token = new JwtSecurityToken(
-                            issuer: _configuration["Authentication:JWT:Issuer"],
-                            audience: _configuration["Authentication:JWT:Audience"],
-                            expires: DateTime.Now.AddHours(3),
-                            claims: authClaims,
-                            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-                        );
-
-                        response.Status = "Success";
-                        response.Message = "User logged in.";
-
-                        _logger.LogInformation("User logged in.");
-
-                        return Ok(new
+                        else
                         {
-                            token = new JwtSecurityTokenHandler().WriteToken(token),
-                            expiration = token.ValidTo
-                        });
+                            var userRoles = await _userManager.GetRolesAsync(user);
+
+                            var authClaims = new List<Claim>
+                            {
+                                new Claim(ClaimTypes.Email, user.Email),
+                                new Claim(ClaimTypes.Name, user.UserName),
+                                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                            };
+
+                            foreach (var userRole in userRoles)
+                            {
+                                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                            }
+
+                            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Authentication:JWT:SecurityKey"]));
+
+                            var token = new JwtSecurityToken(
+                                issuer: _configuration["Authentication:JWT:Issuer"],
+                                audience: _configuration["Authentication:JWT:Audience"],
+                                expires: DateTime.Now.AddHours(3),
+                                claims: authClaims,
+                                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                            );
+
+                            response.Status = "Success";
+                            response.Message = "User logged in.";
+
+                            _logger.LogInformation("User logged in.");
+
+                            return Ok(new
+                            {
+                                token = new JwtSecurityTokenHandler().WriteToken(token),
+                                expiration = token.ValidTo
+                            });
+                        }   
+                    }
+                    else
+                    {
+                        response.Message = "User password is not valid.";
+                        return StatusCode(StatusCodes.Status500InternalServerError, new ResponseModel { Status = "Error", Message = response.Message });
                     }
                 }
                 if (result.IsLockedOut)

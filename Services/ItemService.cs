@@ -29,6 +29,7 @@ namespace Services
                 {
                     result.Id = item.Id;
                     result.Todo = item.Todo;
+                    result.CreatedBy = item.CreatedBy;
                 }
 
                 return result;
@@ -46,7 +47,8 @@ namespace Services
             var listAllTodo = itemList.Select(x => new ItemDTO()
             {
                 Id = x.Id,
-                Todo = x.Todo
+                Todo = x.Todo,
+                CreatedBy = x.CreatedBy
             }).ToList();
 
             return listAllTodo;
@@ -61,7 +63,8 @@ namespace Services
                 .Select(f => new ItemDTO()
                 {
                     Id = f.Id,
-                    Todo = f.Todo
+                    Todo = f.Todo,
+                    CreatedBy = f.CreatedBy
                 }).ToList();
 
             return filteredList;

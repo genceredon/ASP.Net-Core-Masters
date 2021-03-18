@@ -23,13 +23,16 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         private readonly ILogger<ItemsController> _logger;
         private readonly IItemService _service;
         private readonly UserManager<ASPNetCoreMastersTodoListApiUser> _userManager;
+        private readonly IAuthorizationService _authService;
 
         public ItemsController(ILogger<ItemsController> logger, IItemService service,
-            UserManager<ASPNetCoreMastersTodoListApiUser> userManager)
+            UserManager<ASPNetCoreMastersTodoListApiUser> userManager,
+            IAuthorizationService authService)
         {
             _logger = logger;
             _service = service ?? throw new ArgumentNullException(nameof(service));
             _userManager = userManager;
+            _authService = authService;
         }
 
         [Route("{*url}", Order = 999)]
@@ -103,13 +106,20 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
                 Id = id,
                 Todo = itemUpdateModel.Todo
             };
+            
+            var todoItem = await _service.GetTodoDetailsAsync(id);
+            var authResult = await _authService.AuthorizeAsync(User, new TodoList() { CreatedBy = todoItem.CreatedBy }, "CanEditTodoItems");
+
+            if (!authResult.Succeeded)
+            {
+                return new UnauthorizedResult();
+            }
 
             var response = await _service.UpdateTodoItemAsync(mappedObj);
 
             return Ok(response);
         }
 
-        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id:int}")]
         [CheckItemExists]
         public async Task<IActionResult> DeleteTodoItem(int id)
