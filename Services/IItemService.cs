@@ -1,4 +1,6 @@
-﻿using Services.DTO;
+﻿using DomainModels;
+using Repositories.Data;
+using Services.DTO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,18 +8,16 @@ namespace Services
 {
     public interface IItemService
     {
-        public Task<IEnumerable<ItemDTO>> GetAllAsync();
+        public Task<IEnumerable<ItemDTO>> GetAllTodoListAsync();
 
         public Task<IEnumerable<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters);
 
-        public Task<ItemDTO> GetAsync(int itemId);
+        public Task<ItemDTO> GetTodoDetailsAsync(int itemId);
 
-        public void Add(ItemDTO itemDto);
+        public Task<ItemResponse> AddTodoItemAsync(ItemDTO itemDto, ASPNetCoreMastersTodoListApiUser createdBy);
 
-        public void Update(ItemDTO itemDto);
+        public Task<ItemResponse> UpdateTodoItemAsync(ItemDTO itemDto);
 
-        public void Delete(int id);
-
-
+        public Task<ItemResponse> DeleteTodoItemAsync(ItemDTO itemDto);
     }
 }

@@ -7,6 +7,6 @@ namespace ASPNetCoreMastersTodoList.Api.BindingModels
     {
         [Required]
         [StringLength(128, MinimumLength = 1)]
-        public string Text { get; set; }
+        public string Todo { get; set; }
     }
 }

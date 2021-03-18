@@ -7,7 +7,7 @@ using Repositories;
 using Services;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
-using ASPNetCoreMastersTodoList.Api.Data;
+using Repositories.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,7 +34,7 @@ namespace ASPNetCoreMastersTodoList
                 options.Filters.Add(new GlobalTimeElapsedAsyncFilter());          
             });
 
-            services.AddSingleton<DataContext>();
+            //services.AddSingleton<DataContext>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<IItemService, ItemService>();
 

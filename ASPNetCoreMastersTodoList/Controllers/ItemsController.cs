@@ -9,6 +9,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using Microsoft.AspNetCore.Authorization;
+using Repositories.Data;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace ASPNetCoreMastersTodoList.Api.Controllers
 {
@@ -19,11 +22,14 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
     {
         private readonly ILogger<ItemsController> _logger;
         private readonly IItemService _service;
+        private readonly UserManager<ASPNetCoreMastersTodoListApiUser> _userManager;
 
-        public ItemsController(ILogger<ItemsController> logger, IItemService service)
+        public ItemsController(ILogger<ItemsController> logger, IItemService service,
+            UserManager<ASPNetCoreMastersTodoListApiUser> userManager)
         {
             _logger = logger;
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _userManager = userManager;
         }
 
         [Route("{*url}", Order = 999)]
@@ -34,11 +40,11 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllAsync()
+        public async Task<IActionResult> GetAllTodoAsync()
         {
-            var result = await _service.GetAllAsync();
+            var result = await _service.GetAllTodoListAsync();
 
-            if(result == null)
+            if (result == null)
             {
                 return NotFound();
             }
@@ -48,9 +54,9 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
 
         [HttpGet("{id:int}")]
         [CheckItemExists]
-        public async Task<IActionResult> GetAsync(int id)
+        public async Task<IActionResult> GetTodoAsync(int id)
         {
-            var result = await _service.GetAsync(id);
+            var result = await _service.GetTodoDetailsAsync(id);
 
             return Ok(result);
         }
@@ -59,7 +65,7 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         public async Task<IActionResult> GetAllByFilterAsync([FromQuery] ItemByFilterDTO filters)
         {
             var result = await _service.GetAllByFilterAsync(filters);
-            
+
             var isNullOrEmpty = result.Cast<object>().Any();
 
             if (!isNullOrEmpty)
@@ -71,46 +77,51 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post([FromBody] ItemCreateApiModel itemCreateModel)
+        public async Task<IActionResult> AddTodoItem([FromBody] ItemCreateApiModel itemCreateModel)
         {
             var mappedObj = new ItemDTO
             {
-                Text = itemCreateModel.Text
+                Todo = itemCreateModel.Todo
             };
 
-            _service.Add(mappedObj);
+            var name = ((ClaimsIdentity)User.Identity).Name;
+            var user = await _userManager.FindByNameAsync(name);
+
+            var response = await _service.AddTodoItemAsync(mappedObj, user);
             
-            return Ok("Successfully Added!");
+            return Ok(response);
         }
 
-        
+
         [HttpPut("{id:int}")]
         [CheckItemExists]
-        public IActionResult Put(int id,
+        public async Task<IActionResult> UpdateTodoItem(int id,
             [FromBody] ItemUpdateBindingModel itemUpdateModel)
         {
             var mappedObj = new ItemDTO
             {
                 Id = id,
-                Text = itemUpdateModel.Text
+                Todo = itemUpdateModel.Todo
             };
-            
-            _service.Add(mappedObj);
 
-            return Ok("Successfully Updated!");
+            var response = await _service.UpdateTodoItemAsync(mappedObj);
+
+            return Ok(response);
         }
-
-        //Just Added extra authorization here, only with Admin Role can access the Delete API (sample only)
-        //Can also add to other API
 
         [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id:int}")]
         [CheckItemExists]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteTodoItem(int id)
         {
-            _service.Delete(id);
+            var mappedObj = new ItemDTO
+            {
+                Id = id,
+            };
 
-            return Ok("Successfully Deleted!");
-        }        
+            var response = await _service.DeleteTodoItemAsync(mappedObj);
+
+            return Ok(response);
+        }
     }
 }

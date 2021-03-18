@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace ASPNetCoreMastersTodoList.Api.Migrations
+namespace Repositories.Migrations
 {
     public partial class ASPNetCoreMastersTodoListApi : Migration
     {

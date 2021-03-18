@@ -10,7 +10,7 @@ namespace Services.DTO
 
         [Required]
         [StringLength(128, MinimumLength = 1)]
-        public string Text { get; set; }
+        public string Todo { get; set; }
 
         public Item MappedObj(ItemDTO item)
         {
@@ -18,7 +18,7 @@ namespace Services.DTO
             var dtoItemObj = new Item()
             {
                 Id = item.Id,
-                Text = item.Text
+                Todo = item.Todo
             };
 
             return dtoItemObj;

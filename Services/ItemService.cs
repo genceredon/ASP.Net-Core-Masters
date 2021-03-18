@@ -1,4 +1,6 @@
-﻿using Repositories;
+﻿using DomainModels;
+using Repositories;
+using Repositories.Data;
 using Services.DTO;
 using System;
 using System.Collections.Generic;
@@ -16,108 +18,78 @@ namespace Services
             _itemRepo = itemRepo;
         }
 
-        public async Task<ItemDTO> GetAsync(int itemId)
+        public async Task<ItemDTO> GetTodoDetailsAsync(int itemId)
         {
             try
             {
                 var result = new ItemDTO();
-                var repoObj = await _itemRepo.GetAllAsync();
+                var item = await _itemRepo.GetTodoDetailsAsync(itemId);
 
-                var item = repoObj.FirstOrDefault(x => x.Id == itemId);
-                
                 if (item != null)
                 {
                     result.Id = item.Id;
-                    result.Text = item.Text;
+                    result.Todo = item.Todo;
                 }
 
                 return result;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception($"Error encountered - {ex}");
-            }       
+            }
         }
 
-        public async Task<IEnumerable<ItemDTO>> GetAllAsync()
+        public async Task<IEnumerable<ItemDTO>> GetAllTodoListAsync()
         {
-            var itemList = await _itemRepo.GetAllAsync();
-            var listAll = itemList.Select(x => new ItemDTO()
+            var itemList = await _itemRepo.GetAllTodoListsAsync();
+            
+            var listAllTodo = itemList.Select(x => new ItemDTO()
             {
                 Id = x.Id,
-                Text = x.Text
+                Todo = x.Todo
             }).ToList();
 
-            return listAll;
+            return listAllTodo;
         }
 
         public async Task<IEnumerable<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters)
         {
-            var itemList = await _itemRepo.GetAllAsync();
+            var itemList = await _itemRepo.GetAllTodoListsAsync();
 
-            var filteredList = itemList.Where(x => x.Text.ToLower() == filters.Text.ToLower()).Select(f => new ItemDTO()
-            {
-                Id = f.Id,
-                Text = f.Text
-            }).ToList();
+            var filteredList = itemList
+                .Where(x => x.Todo.ToLower() == filters.Todo.ToLower())
+                .Select(f => new ItemDTO()
+                {
+                    Id = f.Id,
+                    Todo = f.Todo
+                }).ToList();
 
             return filteredList;
         }
 
-        public void Add(ItemDTO itemDto)
+        public async Task<ItemResponse> AddTodoItemAsync(ItemDTO itemDto, ASPNetCoreMastersTodoListApiUser createdBy)
         {
             var itemObj = new ItemDTO();
             var result = itemObj.MappedObj(itemDto);
 
-            _itemRepo.Save(result);
+            return await _itemRepo.AddTodoItemAsync(result, createdBy);
         }
 
-        public void Update(ItemDTO itemDto)
+        public async Task<ItemResponse> UpdateTodoItemAsync(ItemDTO itemDto)
         {
             var itemObj = new ItemDTO();
             var result = itemObj.MappedObj(itemDto);
-            var validId = IsIdExisting(itemDto.Id);
 
-            if (validId)
-            {
-                _itemRepo.Save(result);
-            }
-            else
-            {
-                throw new ArgumentException($"{itemDto.Id} Id not found.");
-            }
+            return await _itemRepo.UpdateTodoItemAsync(result);
         }
 
-        public void Delete(int id)
+        public async Task<ItemResponse> DeleteTodoItemAsync(ItemDTO itemDto)
         {
-            var validId = IsIdExisting(id);
+            var itemObj = new ItemDTO();
+            var result = itemObj.MappedObj(itemDto);
 
-            if (validId)
-            {
-                _itemRepo.Delete(id);
-            }
-            else
-            {
-                throw new ArgumentException($"{id} Id not found.");
-            }
-        }
+            return await _itemRepo.DeleteTodoItemAsync(result);
 
-        private bool IsIdExisting(int id)
-        {
-            bool isExisting;
-            var itemExisting = GetAsync(id);
-
-            if (itemExisting.Id != 0)
-            {
-                isExisting = true;
-            }
-            else
-            {
-                isExisting = false;
-                return isExisting;
-            }
-
-            return isExisting;
         }
     }
 }
