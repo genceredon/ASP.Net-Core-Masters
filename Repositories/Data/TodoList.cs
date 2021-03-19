@@ -1,10 +1,9 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
-
-namespace DomainModels
+namespace Repositories.Data
 {
-    public class Item
+    public class TodoList
     {
         public int Id { get; set; }
         public string Todo { get; set; }

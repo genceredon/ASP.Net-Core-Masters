@@ -25,7 +25,7 @@ namespace ASPNetCoreMastersTodoList.Api.Filters
                 if (context.ActionArguments.ContainsKey("id"))
                 {
                     var id = (int)context.ActionArguments["id"];
-                    var result = await _service.GetAsync(id);
+                    var result = await _service.GetTodoDetailsAsync(id);
 
                     if (result.Id == 0)
                     {

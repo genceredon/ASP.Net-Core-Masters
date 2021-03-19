@@ -7,12 +7,14 @@ using Repositories;
 using Services;
 using ASPNetCoreMastersTodoList.Api.ApiModels;
 using ASPNetCoreMastersTodoList.Api.Filters;
-using ASPNetCoreMastersTodoList.Api.Data;
+using Repositories.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using ASPNetCoreMastersTodoList.Api.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ASPNetCoreMastersTodoList
 {
@@ -34,7 +36,7 @@ namespace ASPNetCoreMastersTodoList
                 options.Filters.Add(new GlobalTimeElapsedAsyncFilter());          
             });
 
-            services.AddSingleton<DataContext>();
+            //services.AddSingleton<DataContext>();
             services.AddScoped<IItemRepository, ItemRepository>();
             services.AddScoped<IItemService, ItemService>();
 
@@ -74,6 +76,14 @@ namespace ASPNetCoreMastersTodoList
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("Authentication:JWT:SecurityKey").Value))
                     };
                 });
+
+            //Adding Authorization
+            services.AddAuthorization(options => {
+                options.AddPolicy("CanEditTodoItems",
+                    policy => policy.Requirements.Add(new IsTodoListOwnerRequirement()));
+            });
+
+            services.AddScoped<IAuthorizationHandler, IsTodoListOwnerHandler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

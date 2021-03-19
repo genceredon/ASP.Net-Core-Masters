@@ -1,4 +1,5 @@
 ﻿using DomainModels;
+using Repositories.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,10 +10,14 @@ namespace Repositories
 {
     public interface IItemRepository
     {
-        public Task<IQueryable<Item>> GetAllAsync();
+        public Task<Item> GetTodoDetailsAsync(int id);
 
-        public void Save(Item item);
+        public Task<ICollection<Item>> GetAllTodoListsAsync();
 
-        public void Delete(int id);
+        public Task<ItemResponse> AddTodoItemAsync(Item item, ASPNetCoreMastersTodoListApiUser createdBy);
+
+        public Task<ItemResponse> UpdateTodoItemAsync(Item item);
+
+        public Task<ItemResponse> DeleteTodoItemAsync(Item item);
     }
 }
