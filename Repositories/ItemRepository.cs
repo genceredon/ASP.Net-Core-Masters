@@ -4,7 +4,7 @@ using Repositories.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Serilog;
 using System.Threading.Tasks;
 
 namespace Repositories
@@ -12,10 +12,12 @@ namespace Repositories
     public class ItemRepository : IItemRepository
     {
         private readonly ASPNetCoreMastersTodoListApiContext _dataContext;
+        private readonly ILogger _logger;
 
-        public ItemRepository(ASPNetCoreMastersTodoListApiContext dataContext)
+        public ItemRepository(ASPNetCoreMastersTodoListApiContext dataContext, ILogger logger)
         {
             _dataContext = dataContext;
+            _logger = logger;
         }
 
         public async Task<ICollection<Item>> GetAllTodoListsAsync()
@@ -62,11 +64,14 @@ namespace Repositories
                         
                         response.Status = "Success";
                         response.Message = "Todo item added successfully!.";
+                        _logger.Information("{methodNameName} -- {message}", nameof(AddTodoItemAsync), response.Message);
+
                     }
                     else 
                     {
                         response.Status = "Error";
                         response.Message = "Todo item already exists.";
+                        _logger.Error("{methodNameName} -- An error occurred. {message}", nameof(AddTodoItemAsync), response.Message);
 
                         return response;
                     }
@@ -75,12 +80,15 @@ namespace Repositories
                 {
                     response.Status = "Error";
                     response.Message = "Unable to find the todo item";
+                    _logger.Error("{methodName} -- An error occurred. {message}", nameof(AddTodoItemAsync), response.Message);
+
 
                     return response;
                 }
             }
             catch (Exception ex)
             {
+                _logger.Error(ex, "{methodName} -- An error occurred.", nameof(AddTodoItemAsync));
                 throw new Exception($"Error encountered - {ex}");
             }
 
@@ -90,42 +98,53 @@ namespace Repositories
         public async Task<ItemResponse> UpdateTodoItemAsync(Item item)
         {
             var response = new ItemResponse();
-
-            if (item != null)
+            try
             {
-                if (IsItemExisting(item))
+                if (item != null)
                 {
-                    var updateItem = _dataContext.TodoList.Find(item.Id);
-
-                    if (updateItem != null)
+                    if (IsItemExisting(item))
                     {
+                        var updateItem = _dataContext.TodoList.Find(item.Id);
 
-                        updateItem.Todo = item.Todo;
+                        if (updateItem != null)
+                        {
 
-                        _dataContext.TodoList.Update(updateItem);
+                            updateItem.Todo = item.Todo;
 
-                        await _dataContext.SaveChangesAsync();
+                            _dataContext.TodoList.Update(updateItem);
 
-                        response.Status = "Success";
-                        response.Message = "Todo item updated successfully!.";
-                    }
-                    else
-                    {
-                        response.Status = "Error";
-                        response.Message = "Unable to find the todo item";
+                            await _dataContext.SaveChangesAsync();
 
-                        return response;
+                            response.Status = "Success";
+                            response.Message = "Todo item updated successfully!.";
+                            _logger.Information("{methodName} -- {message}", nameof(UpdateTodoItemAsync), response.Message);
+
+                        }
+                        else
+                        {
+                            response.Status = "Error";
+                            response.Message = "Unable to find the todo item";
+                            _logger.Error("{methodName} -- An error occurred. {message}", nameof(UpdateTodoItemAsync), response.Message);
+
+                            return response;
+                        }
                     }
                 }
+                else
+                {
+                    response.Status = "Error";
+                    response.Message = "Unable to find the todo item";
+                    _logger.Error("{methodName} -- An error occurred. {message}", nameof(UpdateTodoItemAsync), response.Message);
+
+                    return response;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                response.Status = "Error";
-                response.Message = "Unable to find the todo item";
-
-                return response;
+                _logger.Error(ex, "{methodName} -- An error occurred. {0}", nameof(UpdateTodoItemAsync));
+                throw new Exception($"Error encountered - {ex}");
             }
-
+            
             return response;
         }
 
@@ -146,11 +165,13 @@ namespace Repositories
 
                         response.Status = "Success";
                         response.Message = "Todo item deleted successfully!.";
+                        _logger.Information("{methodName} -- {message}", nameof(DeleteTodoItemAsync), response.Message);
                     }
                     else
                     {
                         response.Status = "Error";
                         response.Message = "Unable to find the todo item";
+                        _logger.Error("{methodName} -- An error occurred. {message}", nameof(DeleteTodoItemAsync), response.Message);
 
                         return response;
                     }
@@ -159,6 +180,7 @@ namespace Repositories
                 {
                     response.Status = "Error";
                     response.Message = "Unable to find the todo item";
+                    _logger.Error("{methodName} -- An error occurred. {message}", nameof(DeleteTodoItemAsync), response.Message);
 
                     return response;
                 }
@@ -166,6 +188,7 @@ namespace Repositories
             }
             catch (Exception ex)
             {
+                _logger.Error(ex, "ItemRepository.DeleteTodoItemAsync -- An error occurred.");
                 throw new Exception($"Error encountered - {ex}");
             }
 
