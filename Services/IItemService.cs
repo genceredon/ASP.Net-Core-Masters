@@ -8,9 +8,9 @@ namespace Services
 {
     public interface IItemService
     {
-        public Task<IEnumerable<ItemDTO>> GetAllTodoListAsync();
+        public Task<ICollection<ItemDTO>> GetAllTodoListAsync();
 
-        public Task<IEnumerable<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters);
+        public Task<ICollection<ItemDTO>> GetAllByFilterAsync(ItemByFilterDTO filters);
 
         public Task<ItemDTO> GetTodoDetailsAsync(int itemId);
 

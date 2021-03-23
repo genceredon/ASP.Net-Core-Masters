@@ -15,6 +15,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ASPNetCoreMastersTodoList.Api.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.OpenApi.Models;
+using System;
+using System.Reflection;
+using System.IO;
+using Serilog;
 
 namespace ASPNetCoreMastersTodoList
 {
@@ -31,9 +36,9 @@ namespace ASPNetCoreMastersTodoList
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers(options => 
+            services.AddControllers(options =>
             {
-                options.Filters.Add(new GlobalTimeElapsedAsyncFilter());          
+                options.Filters.Add(new GlobalTimeElapsedAsyncFilter());
             });
 
             //services.AddSingleton<DataContext>();
@@ -41,7 +46,7 @@ namespace ASPNetCoreMastersTodoList
             services.AddScoped<IItemService, ItemService>();
 
             services.Configure<Settings>(Configuration.GetSection("Authentication:JWT:SecurityKey"));
-           
+
             // For Entity Framework
             services.AddDbContext<ASPNetCoreMastersTodoListApiContext>(options =>
                     options.UseSqlServer(
@@ -51,7 +56,7 @@ namespace ASPNetCoreMastersTodoList
             services.AddDefaultIdentity<ASPNetCoreMastersTodoListApiUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<ASPNetCoreMastersTodoListApiContext>()
-                .AddDefaultTokenProviders();                
+                .AddDefaultTokenProviders();
 
             // Adding Authentication  
             services.AddAuthentication(options =>
@@ -78,17 +83,43 @@ namespace ASPNetCoreMastersTodoList
                 });
 
             //Adding Authorization
-            services.AddAuthorization(options => {
+            services.AddAuthorization(options =>
+            {
                 options.AddPolicy("CanEditTodoItems",
                     policy => policy.Requirements.Add(new IsTodoListOwnerRequirement()));
             });
 
             services.AddScoped<IAuthorizationHandler, IsTodoListOwnerHandler>();
+
+            // Register the Swagger generator, defining 1 or more Swagger documents
+            services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "ASPNetCoreMastersTodoList API",
+                    Description = "A simple example ASP.NET Core Web API",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Gen Ceredon",
+                        Email = "GenC@magenic.comm",
+                    }
+                });
+
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                options.IncludeXmlComments(xmlPath);
+            });
+
+            //Add Serilog logger
+            services.AddSingleton<Serilog.ILogger>(Log.Logger);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+
             env.EnvironmentName = "Production";
 
             if (env.IsDevelopment())
@@ -110,6 +141,17 @@ namespace ASPNetCoreMastersTodoList
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();                  
+            });
+
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(options => 
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "ASPNetCoreMastersTodoList API");
+                options.RoutePrefix = string.Empty;
             });
         }
     }

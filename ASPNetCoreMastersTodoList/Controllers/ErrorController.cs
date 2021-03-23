@@ -10,7 +10,11 @@ namespace ASPNetCoreMastersTodoList.Api.Controllers
     [ApiController]
     public class ErrorController : ControllerBase
     {
+        /// <summary>
+        /// Error
+        /// </summary>
         [Route("/error")]
+        [HttpGet]
         public IActionResult Error() => Problem();
     }
 }
